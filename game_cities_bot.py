@@ -2,6 +2,7 @@ import telebot
 from random import randint
 from game_cities_bot_cities import citiess
 
+
 cities = citiess
 
 def last_cor_chr(word):
