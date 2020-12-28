@@ -66,21 +66,25 @@ def news_message(message):
 
 @bot.message_handler(commands=['weather'])
 def weather_message(message):
-    owm = OWM('7e9311da0428e311ec8aabbcc3a913f9')
-    city = 'Tyumen'
-    manager = owm.weather_manager()
-    observation = manager.weather_at_place(city)
-    view = observation.weather
-    out = f'Город: {city}' \
-          f'\nТемпература: {view.temperature("celsius").get("temp")}°C'\
-          f'\nМинимальная температура: {view.temperature("celsius").get("temp_min")}°C' \
-          f'\nМаксимальная температура: {view.temperature("celsius").get("temp_max")}°C' \
-          f'\nОщущается как: {view.temperature("celsius").get("feels_like")}°C' \
-          f'\nВлажность: {view.humidity}%' \
-          f'\nОблачность: {view.clouds}%' \
-          f'\nАтмосферное давление: {view.pressure["press"]} мм рт. ст.' \
-          f'\nСтатус: {view.status}'
-    bot.send_message(message.from_user.id, out)
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    keyboard.add(telebot.types.InlineKeyboardButton('Тюмень', callback_data='Tyumen'),
+                 telebot.types.InlineKeyboardButton('Москва', callback_data='Moscow'),
+                 telebot.types.InlineKeyboardButton('Санкт-Петербург',
+                                                    callback_data='Saint Petersburg'),
+                 telebot.types.InlineKeyboardButton('Казань', callback_data='Kasan'),
+                 telebot.types.InlineKeyboardButton('Омск', callback_data='Omsk'),
+                 telebot.types.InlineKeyboardButton('Нижний Новгород',
+                                                    callback_data='Nizhny Novgorod'),
+                 telebot.types.InlineKeyboardButton('Ростов-на-Дону',
+                                                    callback_data='Rostov-on-Don'),
+                 telebot.types.InlineKeyboardButton('Челябинск',
+                                                    callback_data='Chelyabinsk'),
+                 telebot.types.InlineKeyboardButton('Екатеринбург',
+                                                    callback_data='Yekaterinburg'),
+                 telebot.types.InlineKeyboardButton('Самара', callback_data='Samara')
+                 )
+    out = 'Выберите город'
+    bot.send_message(message.from_user.id, out, reply_markup=keyboard)
 
 @bot.message_handler(commands=['money'])
 def money_message(message):
@@ -98,7 +102,9 @@ def money_message(message):
         count_money = res[0][1]
         out = f'У вас в кошельке {right_sclon(count_money, "рублей", "рубль", "рублей", "рублей", "рублей")}'
     except:
-        out = 'Теперь, введите число, которое соответствует изменению в деньгах (валюта - ₽)'
+        out = 'Теперь, введите число, которое соответствует изменению в деньгах (валюта - ₽) со знаком '
+        out += 'минус (если он требуется) после решётки. Пример: #100 - добавить 100 рублей '
+        out += '#-100 - отнять 100 рублей от текущего состояния'
     bot.send_message(message.from_user.id, out)
 
 @bot.message_handler(commands=['communicate'])
@@ -115,6 +121,24 @@ def communicate_message(message):
 
     bot.send_message(message.from_user.id, out, reply_markup=keyboard)
 
+@bot.callback_query_handler(func=lambda x: '' in x.data)
+def weather_city_message(message):
+    city = message.data
+    owm = OWM('7e9311da0428e311ec8aabbcc3a913f9')
+    manager = owm.weather_manager()
+    observation = manager.weather_at_place(city)
+    view = observation.weather
+    out = f'Город: {city}' \
+          f'\nТемпература: {view.temperature("celsius").get("temp")}°C' \
+          f'\nМинимальная температура: {view.temperature("celsius").get("temp_min")}°C' \
+          f'\nМаксимальная температура: {view.temperature("celsius").get("temp_max")}°C' \
+          f'\nОщущается как: {view.temperature("celsius").get("feels_like")}°C' \
+          f'\nВлажность: {view.humidity}%' \
+          f'\nОблачность: {view.clouds}%' \
+          f'\nАтмосферное давление: {view.pressure["press"]} мм рт. ст.' \
+          f'\nСтатус: {view.status}'
+    bot.send_message(message.from_user.id, out)
+
 @bot.message_handler(content_types=['text'])
 def text_message(message):
     if message.text.lower()[0] == '#':
@@ -129,7 +153,6 @@ def text_message(message):
         else:
             cursor.execute(f'''UPDATE money SET count_money = {res[0][1] + int(chislo)}
 WHERE id = {int(idd)}''')
-        print(res)
         conn.commit()
     else:
         modes = {
